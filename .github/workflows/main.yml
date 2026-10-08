@@ -265,3 +265,270 @@ public class AdminDashboardActivity extends AppCompatActivity {
             }
         });
 
+===================================================================
+ধাপ ১: build.gradle (Module: app)
+===================================================================
+// dependencies ব্লকের ভেতর নিচের লাইব্রেরিগুলো যুক্ত করুন:
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    
+    // Firebase Realtime Database
+    implementation 'com.google.firebase:firebase-database:20.2.2'
+}
+
+
+===================================================================
+ধাপ ২: Member.java (Model Class)
+===================================================================
+package com.example.memberapp;
+
+public class Member {
+    public String id, name, mobile, role, status;
+
+    public Member() {
+        // Firebase-এর ডাটা রিড করার জন্য খালি কনস্ট্রাক্টর বাধ্যতামূলক
+    }
+
+    public Member(String id, String name, String mobile, String role, String status) {
+        this.id = id;
+        this.name = name;
+        this.mobile = mobile;
+        this.role = role;
+        this.status = status; // "Pending", "Accepted", "Rejected"
+    }
+}
+
+
+===================================================================
+ধাপ ৩: MainActivity.java (Home Page Logic)
+===================================================================
+package com.example.memberapp;
+
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.widget.ImageButton;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
+    private RecyclerView recyclerView;
+    private MemberAdapter adapter;
+    private List<Member> memberList;
+    private DatabaseReference dbRef;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        recyclerView = findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        memberList = new ArrayList<>();
+        
+        // false = সাধারণ ইউজার ভিউ (বাটন হাইড থাকবে)
+        adapter = new MemberAdapter(this, memberList, false); 
+        recyclerView.setAdapter(adapter);
+
+        dbRef = FirebaseDatabase.getInstance().getReference("Members");
+
+        // শুধুমাত্র Accepted স্ট্যাটাসের সদস্যদের ফিল্টার করে দেখানোর লজিক
+        dbRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                memberList.clear();
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    Member member = data.getValue(Member.class);
+                    if (member != null && "Accepted".equals(member.status)) {
+                        memberList.add(member);
+                    }
+                }
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {}
+        });
+
+        // রেজিস্ট্রেশন পেজে যাওয়ার অ্যাকশন
+        findViewById(R.id.btnRegister).setOnClickListener(v -> 
+            startActivity(new Intent(MainActivity.this, RegisterActivity.class)));
+
+        // এডমিন লগইন পেজে যাওয়ার অ্যাকশন
+        findViewById(R.id.btnAdminLogin).setOnClickListener(v -> 
+            startActivity(new Intent(MainActivity.this, LoginActivity.class)));
+
+        // হোয়াটসঅ্যাপে যোগাযোগের অ্যাকশন
+        ImageButton btnWhatsApp = findViewById(R.id.btnWhatsApp);
+        btnWhatsApp.setOnClickListener(v -> {
+            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://whatsapp.com"));
+            startActivity(i);
+        });
+    }
+}
+
+
+===================================================================
+ধাপ ৪: RegisterActivity.java (Registration Logic)
+===================================================================
+package com.example.memberapp;
+
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.widget.EditText;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+public class RegisterActivity extends AppCompatActivity {
+    private EditText etName, etMobile;
+    private DatabaseReference dbRef;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_register);
+
+        etName = findViewById(R.id.etName);
+        etMobile = findViewById(R.id.etMobile);
+        dbRef = FirebaseDatabase.getInstance().getReference("Members");
+
+        findViewById(R.id.btnSubmitReg).setOnClickListener(v -> {
+            String name = etName.getText().toString().trim();
+            String mobile = etMobile.getText().toString().trim();
+
+            if (!TextUtils.isEmpty(name) && !TextUtils.isEmpty(mobile)) {
+                String id = dbRef.push().getKey();
+                Member member = new Member(id, name, mobile, "সদস্য", "Pending");
+                
+                if (id != null) {
+                    dbRef.child(id).setValue(member);
+                    Toast.makeText(this, "আবেদন সফল! এডমিনের অনুমোদনের অপেক্ষা করুন।", Toast.LENGTH_LONG).show();
+                    finish();
+                }
+            } else {
+                Toast.makeText(this, "সব তথ্য সঠিকভাবে পূরণ করুন।", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+    }
+}
+
+
+===================================================================
+ধাপ ৫: LoginActivity.java (Admin Login Logic)
+===================================================================
+package com.example.memberapp;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.InputType;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class LoginActivity extends AppCompatActivity {
+    private EditText etUser, etPass;
+    private Button btnLogin;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_login);
+
+        etUser = findViewById(R.id.etUsername);
+        etPass = findViewById(R.id.etPassword);
+        btnLogin = findViewById(R.id.btnSubmitLogin);
+
+        etUser.setHint("এডমিন ইউজারনেম");
+        etPass.setHint("পাসওয়ার্ড");
+        etPass.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        btnLogin.setText("লগইন");
+
+        btnLogin.setOnClickListener(v -> {
+            if (etUser.getText().toString().equals("admin") && etPass.getText().toString().equals("admin123")) {
+                startActivity(new Intent(LoginActivity.this, AdminDashboardActivity.class));
+                finish();
+            } else {
+                Toast.makeText(this, "ভুল ইউজারনেম বা পাসওয়ার্ড!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+    }
+}
+
+
+===================================================================
+ধাপ ৬: AdminDashboardActivity.java (Admin Panel Logic)
+===================================================================
+package com.example.memberapp;
+
+import android.os.Bundle;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import java.util.ArrayList;
+import java.util.List;
+
+public class AdminDashboardActivity extends AppCompatActivity {
+    private RecyclerView recyclerView;
+    private MemberAdapter adapter;
+    private List<Member> memberList;
+    private DatabaseReference dbRef;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_admin_dashboard);
+
+        recyclerView = findViewById(R.id.recyclerViewAdmin);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        memberList = new ArrayList<>();
+        
+        // true = এডমিন মোড একটিভ (অ্যাকশন বাটন দৃশ্যমান হবে)
+        adapter = new MemberAdapter(this, memberList, true); 
+        recyclerView.setAdapter(adapter);
+
+        dbRef = FirebaseDatabase.getInstance().getReference("Members");
+
+        // ডাটাবেজের সম্পূর্ণ ডেটা লোড করার লজিক
+        dbRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                memberList.clear();
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    Member member = data.getValue(Member.class);
+                    if (member != null) {
+                        memberList.add(member);
+                    }
+                }
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                Toast.makeText(AdminDashboardActivity.this, "ডেটা লোড করতে ব্যর্থ!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
