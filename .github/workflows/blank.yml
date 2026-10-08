@@ -1,9 +1,13 @@
+// ============================================================================
+// ১. Member.java (Model Class)
+// PATH: app/src/main/java/com/example/memberapp/Member.java
+// ============================================================================
 package com.example.memberapp;
 
 public class Member {
     public String id, name, mobile, role, status;
 
-    public Member() {} // Firebase এর জন্য প্রয়োজন
+    public Member() {} // Firebase-এর জন্য খালি কনস্ট্রাক্টর প্রয়োজন
 
     public Member(String id, String name, String mobile, String role, String status) {
         this.id = id;
@@ -13,74 +17,12 @@ public class Member {
         this.status = status; // "Pending", "Accepted", "Rejected"
     }
 }
-<?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://android.com"
-    xmlns:app="http://android.com"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#F4F6F9">
 
-    <!-- Header -->
-    <LinearLayout
-        android:id="@+id/header"
-        android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:background="#6200EE"
-        android:orientation="vertical"
-        android:padding="16dp">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="সদস্য তালিকা"
-            android:textColor="#FFFFFF"
-            android:textSize="24sp"
-            android:textStyle="bold"/>
-        <Button
-            android:id="@+id/btnAdminLogin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Admin Login"
-            android:backgroundTint="#FF9800"
-            android:layout_gravity="end"/>
-    </LinearLayout>
 
-    <!-- Members List -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/header"
-        android:layout_above="@+id/bottomBar"
-        android:padding="8dp"/>
-
-    <!-- Bottom Buttons -->
-    <LinearLayout
-        android:id="@+id/bottomBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:background="#FFFFFF">
-
-        <Button
-            android:id="@+id/btnRegister"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Registration করুন"
-            android:backgroundTint="#4CAF50"
-            android:layout_marginEnd="8dp"/>
-
-        <ImageButton
-            android:id="@+id/btnWhatsApp"
-            android:layout_width="60dp"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/stat_notify_chat"
-            android:backgroundTint="#25D366"
-            android:contentDescription="WhatsApp" />
-    </LinearLayout>
-</RelativeLayout>
+// ============================================================================
+// ২. MainActivity.java (Home Page Logic)
+// PATH: app/src/main/java/com/example/memberapp/MainActivity.java
+// ============================================================================
 package com.example.memberapp;
 
 import android.content.Intent;
@@ -88,7 +30,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -110,12 +51,12 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         memberList = new ArrayList<>();
-        adapter = new MemberAdapter(this, memberList, false); // False = Admin মোড নয়
+        adapter = new MemberAdapter(this, memberList, false); // False = সাধারণ ইউজার মোড
         recyclerView.setAdapter(adapter);
 
         dbRef = FirebaseDatabase.getInstance().getReference("Members");
 
-        // ডাটা লোড করা (শুধুমাত্র Accepted সদস্যরা দেখাবে)
+        // শুধুমাত্র Approved/Accepted সদস্যদের হোমপেজে দেখাবে
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
@@ -132,13 +73,15 @@ public class MainActivity extends AppCompatActivity {
             public void onCancelled(DatabaseError error) {}
         });
 
+        // রেজিষ্ট্রেশন বাটনের কাজ
         findViewById(R.id.btnRegister).setOnClickListener(v -> 
             startActivity(new Intent(MainActivity.this, RegisterActivity.class)));
 
+        // অ্যাডমিন লগইন বাটনের কাজ
         findViewById(R.id.btnAdminLogin).setOnClickListener(v -> 
             startActivity(new Intent(MainActivity.this, LoginActivity.class)));
 
-        // WhatsApp Button Link
+        // হোয়াটসঅ্যাপ বাটন অ্যাকশন (০১৭৭১০৬ชม৪৯)
         ImageButton btnWhatsApp = findViewById(R.id.btnWhatsApp);
         btnWhatsApp.setOnClickListener(v -> {
             String url = "https://whatsapp.com";
@@ -148,56 +91,12 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 }
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://android.com"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:gravity="center"
-    android:background="#F4F6F9">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="নতুন সদস্য নিবন্ধন"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="24dp"/>
 
-    <EditText
-        android:id="@+id/etName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="নাম দিন"
-        android:background="@android:drawable/editbox_background_normal"
-        android:padding="12dp"
-        android:layout_marginBottom="12dp"/>
-
-    <EditText
-        android:id="@+id/etMobile"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="মোবাইল নম্বর"
-        android:inputType="phone"
-        android:padding="12dp"
-        android:layout_marginBottom="24dp"/>
-
-    <Button
-        android:id="@+id/btnSubmitReg"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="আবেদন করুন"
-        android:backgroundTint="#6200EE"/>
-
-    <Button
-        android:id="@+id/btnBack"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="ফিরে যান (Back)"
-        android:backgroundTint="#757575"
-        android:layout_marginTop="16dp"/>
-</LinearLayout>
+// ============================================================================
+// ৩. RegisterActivity.java (Registration Logic)
+// PATH: app/src/main/java/com/example/memberapp/RegisterActivity.java
+// ============================================================================
 package com.example.memberapp;
 
 import android.os.Bundle;
@@ -227,7 +126,7 @@ public class RegisterActivity extends AppCompatActivity {
 
             if (!name.isEmpty() && !mobile.isEmpty()) {
                 String id = dbRef.push().getKey();
-                // নতুন সদস্য ডিফল্টভাবে "Pending" এবং পদবি "সদস্য" থাকবে
+                // নতুন আবেদনের ডিফল্ট স্ট্যাটাস "Pending" এবং পদবি "সদস্য" থাকবে
                 Member member = new Member(id, name, mobile, "সদস্য", "Pending");
                 if (id != null) {
                     dbRef.child(id).setValue(member);
@@ -235,14 +134,20 @@ public class RegisterActivity extends AppCompatActivity {
                     finish();
                 }
             } else {
-                Toast.makeText(this, "সব তথ্য পূরণ করুন", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "সব তথ্য সঠিকভাবে পূরণ করুন", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // Back Button
+        // ব্যাক বাটন (Back Button) কাজ
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
     }
 }
+
+
+// ============================================================================
+// ৪. LoginActivity.java (Admin Login Logic)
+// PATH: app/src/main/java/com/example/memberapp/LoginActivity.java
+// ============================================================================
 package com.example.memberapp;
 
 import android.content.Intent;
@@ -256,7 +161,7 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_register); // একই লেআউট একটু পরিবর্তন করে ব্যবহার করতে পারেন
+        setContentView(R.layout.activity_register); // একই সুন্দর লেআউট পুনরায় ব্যবহার করা হয়েছে
 
         EditText etUser = findViewById(R.id.etName);
         EditText etPass = findViewById(R.id.etMobile);
@@ -264,9 +169,10 @@ public class LoginActivity extends AppCompatActivity {
 
         etUser.setHint("অ্যাডমিন ইউজারনেম");
         etPass.setHint("পাসওয়ার্ড");
-        etPass.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        btnLogin.setText("Login");
+        etPass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        btnLogin.setText("লগইন করুন");
 
+        // স্ট্যাটিক ডেমো অ্যাডমিন লগইন ক্রেডেনশিয়াল (User: admin , Pass: admin123)
         btnLogin.setOnClickListener(v -> {
             if(etUser.getText().toString().equals("admin") && etPass.getText().toString().equals("admin123")) {
                 startActivity(new Intent(LoginActivity.this, AdminDashboardActivity.class));
@@ -276,187 +182,16 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
         
+        // ব্যাক বাটন অ্যাকশন
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
     }
 }
-<?xml version="1.0" encoding="utf-8"?>
-<cardview xmlns:android="http://android.com"
-    xmlns:app="http://android.com"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="6dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="4dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="নাম"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#333"/>
-
-        <TextView
-            android:id="@+id/tvMobile"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="মোবাইল"/>
-
-        <TextView
-            android:id="@+id/tvRole"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#E91E63"
-            android:text="পদবি: সদস্য"/>
-
-        <!-- Admin Control Layout -->
-        <LinearLayout
-            android:id="@+id/adminControlLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp"
-            android:visibility="gone">
-
-            <Button
-                android:id="@+id/btnAccept"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Accept"
-                android:backgroundTint="#4CAF50"/>
-
-            <Button
-                android:id="@+id/btnReject"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Reject"
-                android:backgroundTint="#F44336"
-                android:layout_marginHorizontal="4dp"/>
-
-            <Button
-                android:id="@+id/btnEdit"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Edit"
-                android:backgroundTint="#2196F3"/>
-        </LinearLayout>
-    </LinearLayout>
-</cardview>
-package com.example.memberapp;
-
-import android.app.AlertDialog;
-import android.content.Context;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.Button;
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
-import com.google.firebase.database.FirebaseDatabase;
-import java.util.List;
-
-public class MemberAdapter extends RecyclerView.Adapter<MemberAdapter.ViewHolder> {
-    private Context context;
-    private List<Member> list;
-    private boolean isAdmin;
-
-    public MemberAdapter(Context context, List<Member> list, boolean isAdmin) {
-        this.context = context;
-        this.list = list;
-        this.isAdmin = isAdmin;
-    }
-
-    @NonNull
-    @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_member, parent, false);
-        return new ViewHolder(view);
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Member member = list[position];
-        holder.tvName.setText(member.name);
-        holder.tvMobile.setText("মোবাইল: " + member.mobile);
-        holder.tvRole.setText("পদবি: " + member.role + " (" + member.status + ")");
-
-        if (isAdmin) {
-            holder.adminControlLayout.setVisibility(View.VISIBLE);
-            
-            // Accept Button
-            holder.btnAccept.setOnClickListener(v -> 
-                FirebaseDatabase.getInstance().getReference("Members").child(member.id).child("status").setValue("Accepted"));
-
-            // Reject Button
-            holder.btnReject.setOnClickListener(v -> 
-                FirebaseDatabase.getInstance().getReference("Members").child(member.id).child("status").setValue("Rejected"));
-
-            // Edit Name and Role Button
-            holder.btnEdit.setOnClickListener(v -> showEditDialog(member));
-        }
-    }
-
-    private void showEditDialog(Member member) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("তথ্য সংশোধন করুন");
-
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(40, 20, 40, 20);
-
-        final EditText etName = new EditText(context);
-        etName.setText(member.name);
-        layout.addView(etName);
-
-        final EditText etRole = new EditText(context);
-        etRole.setText(member.role);
-        layout.addView(etRole);
-
-        builder.setView(layout);
-
-        builder.setPositiveButton("Update", (dialog, which) -> {
-            String newName = etName.getText().toString();
-            String newRole = etRole.getText().toString();
-            FirebaseDatabase.getInstance().getReference("Members").child(member.id).child("name").setValue(newName);
-            FirebaseDatabase.getInstance().getReference("Members").child(member.id).child("role").setValue(newRole);
-        });
-        builder.setNegativeButton("Cancel", null);
-        builder.show();
-    }
-
-    @Override
-    public int getItemCount() { return list.size(); }
-
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvMobile, tvRole;
-        LinearLayout adminControlLayout;
-        Button btnAccept, btnReject, btnEdit;
-
-        public ViewHolder(@NonNull View itemView) {
-            super(itemView);
-            tvName = itemView.findViewById(R.id.tvName);
-            tvMobile = itemView.findViewById(R.id.tvMobile);
-            tvRole = itemView.findViewById(R.id.tvRole);
-            adminControlLayout = itemView.findViewById(R.id.adminControlLayout);
-            btnAccept = itemView.findViewById(R.id.btnAccept);
-            btnReject = itemView.findViewById(R.id.btnReject);
-            btnEdit = itemView.findViewById(R.id.btnEdit);
-        }
-    }
-}
+// ============================================================================
+// ৫. AdminDashboardActivity.java (Admin Panel Logic)
+// PATH: app/src/main/java/com/example/memberapp/AdminDashboardActivity.java
+// ============================================================================
 package com.example.memberapp;
 
 import android.os.Bundle;
@@ -476,16 +211,16 @@ public class AdminDashboardActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main); // একই মেইন লেআউট রিউজ করা হয়েছে
+        setContentView(R.layout.activity_main); // মেইন লেআউট পুনরায় ব্যবহার
 
-        // হোমপেজের বাটন হাইড বা টেক্সট চেঞ্জ করতে পারেন
+        // অ্যাডমিন প্যানেলে নিচের বাটনগুলোর প্রয়োজন নেই তাই হাইড করা হয়েছে
         findViewById(R.id.btnAdminLogin).setVisibility(android.view.View.GONE);
         findViewById(R.id.bottomBar).setVisibility(android.view.View.GONE);
 
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         memberList = new ArrayList<>();
-        adapter = new MemberAdapter(this, memberList, true); // True = Admin মোড চালু
+        adapter = new MemberAdapter(this, memberList, true); // True = অ্যাডমিন কন্ট্রোল বাটন দৃশ্যমান হবে
         recyclerView.setAdapter(adapter);
 
         dbRef = FirebaseDatabase.getInstance().getReference("Members");
@@ -504,39 +239,13 @@ public class AdminDashboardActivity extends AppCompatActivity {
         });
     }
 }
-# This is a basic workflow to help you get started with Actions
 
-name: CI
 
-# Controls when the workflow will run
-on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+// ============================================================================
+// ৬. MemberAdapter.java (Accept, Reject & Edit Logic)
+// PATH: app/src/main/java/com/example/memberapp/MemberAdapter.java
+// ============================================================================
+package com.example.memberapp;
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
-jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
-
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+import android.app.AlertDialog;
+import android.content.Context;
